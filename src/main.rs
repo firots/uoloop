@@ -74,7 +74,6 @@ impl eframe::App for MainScreen {
                 ui.spacing_mut().text_edit_width = 100.0;
                 ui.spacing_mut().button_padding = Vec2::new(20.0, 0.0);
 
-
                 ui.add_enabled_ui(!self.looping, |ui| {
                     ui.label(format!("{}", "Tuş:"));
                     egui::ComboBox::new("Tus", "")
@@ -85,8 +84,7 @@ impl eframe::App for MainScreen {
                         }
                     });
                     ui.label(format!("{}", "Bekle:"));
-                    ui.text_edit_singleline(&mut self.wait_time_text)
-                        .labelled_by("Bekle:".to_owned().into());
+                    ui.text_edit_singleline(&mut self.wait_time_text);
                     ui.spacing();
                 });
 
