@@ -40,21 +40,14 @@ fn get_window_title(hwnd: usize) -> String {
     unsafe {
         GetWindowTextW(hwnd as _, buffer.as_mut_ptr(), (length + 1) as i32);
     }
-
-    // Convert buffer to String
     String::from_utf16_lossy(&buffer)
 }
 
 fn extract_name(input: &str) -> &str {
-    // Split the input string by '-'
     let parts: Vec<&str> = input.split('-').collect();
-
-    // The name should be the first part, so we get the first element after trimming whitespace
     if let Some(name) = parts.get(0) {
         return name.trim();
     }
-
-    // Return empty string if no name is found
     ""
 }
 
