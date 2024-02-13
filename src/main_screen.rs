@@ -44,43 +44,48 @@ impl eframe::App for MainScreen {
                 ui.spacing_mut().combo_width = 135.0;
                 ui.spacing_mut().text_edit_width = 100.0;
                 ui.spacing_mut().button_padding = Vec2::new(20.0, 0.0);
+                self.loop_views(ui);
+                self.start_button_view(ui);
+            });
+        });
+    }
+}
 
-                let mut combo_id = 0;
-                for loop_value in &mut self.loop_values {
-                    ui.horizontal(|ui| {
-                        ui.add_enabled_ui(!self.looping, |ui| {
-                            ui.label(format!("{}", SELECTED_KEY_TITLE));
-                            egui::ComboBox::new("tus".to_owned() + &combo_id.to_string(), "")
-                            .selected_text(loop_value.selected_key_text.clone())
-                            .show_ui(ui, |ui| {
-                                for input_key in &INPUT_KEYS {
-                                    ui.selectable_value(&mut loop_value.selected_key_text, input_key.title.to_owned(), input_key.title);
-                                }
-                            });
-                            ui.label(format!("{}", WAIT_TITLE));
-                            ui.text_edit_singleline(&mut loop_value.wait_time_text);
-                            ui.spacing();
-                        });
-                        combo_id += 1;
+impl MainScreen {
+    fn loop_views(&mut self, ui: &mut egui::Ui) {
+        let mut combo_id = 0;
+        for loop_value in &mut self.loop_values {
+            ui.horizontal(|ui| {
+                ui.add_enabled_ui(!self.looping, |ui| {
+                    ui.label(format!("{}", SELECTED_KEY_TITLE));
+                    egui::ComboBox::new("tus".to_owned() + &combo_id.to_string(), "")
+                    .selected_text(loop_value.selected_key_text.clone())
+                    .show_ui(ui, |ui| {
+                        for input_key in &INPUT_KEYS {
+                            ui.selectable_value(&mut loop_value.selected_key_text, input_key.title.to_owned(), input_key.title);
+                        }
                     });
+                    ui.label(format!("{}", WAIT_TITLE));
+                    ui.text_edit_singleline(&mut loop_value.wait_time_text);
+                    ui.spacing();
+                });
+                combo_id += 1;
+            });
+        }
+    }
+
+    fn start_button_view(&mut self, ui: &mut egui::Ui) {
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Min), |ui| {
+            ui.horizontal(|ui| {
+                let button_text = if self.looping {
+                    STOP_BUTTON_TITLE
+                } else {
+                    START_BUTTON_TITLE
+                };
+                ui.add_space(2.0);
+                if ui.button(button_text).clicked() {
+                    self.on_button_tap();
                 }
-
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Min), |ui| {
-                    ui.horizontal(|ui| {
-                        let button_text: &str;
-                        if self.looping {
-                            button_text = STOP_BUTTON_TITLE;
-                        } else {
-                            button_text = START_BUTTON_TITLE;
-                        }
-                        ui.add_space(2.0);
-                        if ui.button(button_text).clicked() {
-                            self.on_button_tap();
-                        }
-                    });
-                })
-
-
             });
         });
     }
@@ -95,7 +100,7 @@ impl MainScreen {
         }
     }
 
-    fn start_loop(&mut self) {
+    fn get_loop_steps(&mut self) -> Vec<LooperStep>{
         let mut steps = Vec::new();
         for loop_value in &mut self.loop_values {
             let key_index = INPUT_KEYS
@@ -119,7 +124,11 @@ impl MainScreen {
                 loop_value.wait_time_text = WAIT_TIME_NONE_TEXT.to_owned();
             }
         }
+        steps
+    }
 
+    fn start_loop(&mut self) {
+        let steps = self.get_loop_steps();
         let (tx, rx) = mpsc::channel();
         self.sender = Some(tx.clone());
         let thread_id = unsafe { GetCurrentThreadId() };
