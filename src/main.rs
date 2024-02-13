@@ -17,7 +17,7 @@ fn main() -> Result<(), eframe::Error> {
     
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_inner_size([425.0, 128.0])
+            .with_inner_size([350.0, 142.0])
             .with_resizable(false)
             .with_maximize_button(false),
         ..Default::default()
@@ -62,42 +62,59 @@ struct MainScreen {
     window_handle: usize,
     sender: Option<Sender<LooperMessage>>,
     looping: bool,
-    selected_key_title: String,
-    wait_time_text: String,
+    loop_values: Vec<SelectedLoopValue>
+}
+
+#[derive(Clone)]
+struct SelectedLoopValue {
+    selected_key_text: String,
+    wait_time_text: String
 }
 
 impl eframe::App for MainScreen {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.horizontal(|ui| {
+            ui.vertical(|ui| {
                 ui.spacing_mut().combo_width = 135.0;
                 ui.spacing_mut().text_edit_width = 100.0;
                 ui.spacing_mut().button_padding = Vec2::new(20.0, 0.0);
 
-                ui.add_enabled_ui(!self.looping, |ui| {
-                    ui.label(format!("{}", "Tuş:"));
-                    egui::ComboBox::new("Tus", "")
-                    .selected_text(self.selected_key_title.clone())
-                    .show_ui(ui, |ui| {
-                        for input_key in &INPUT_KEYS {
-                            ui.selectable_value(&mut self.selected_key_title, input_key.title.to_owned(), input_key.title);
+                let mut combo_id = 0;
+                for loop_value in &mut self.loop_values {
+                    ui.horizontal(|ui| {
+                        ui.add_enabled_ui(!self.looping, |ui| {
+                            ui.label(format!("{}", "Tuş:"));
+                            egui::ComboBox::new("tus".to_owned() + &combo_id.to_string(), "")
+                            .selected_text(loop_value.selected_key_text.clone())
+                            .show_ui(ui, |ui| {
+                                for input_key in &INPUT_KEYS {
+                                    ui.selectable_value(&mut loop_value.selected_key_text, input_key.title.to_owned(), input_key.title);
+                                }
+                            });
+                            ui.label(format!("{}", "Bekle:"));
+                            ui.text_edit_singleline(&mut loop_value.wait_time_text);
+                            ui.spacing();
+                        });
+                        combo_id += 1;
+                    });
+                }
+
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Min), |ui| {
+                    ui.horizontal(|ui| {
+                        let button_text: &str;
+                        if self.looping {
+                            button_text = "Dur";
+                        } else {
+                            button_text = "Başla";
+                        }
+                        ui.add_space(2.0);
+                        if ui.button(button_text).clicked() {
+                            self.on_button_tap();
                         }
                     });
-                    ui.label(format!("{}", "Bekle:"));
-                    ui.text_edit_singleline(&mut self.wait_time_text);
-                    ui.spacing();
-                });
+                })
 
-                let button_text: &str;
 
-                if self.looping {
-                    button_text = "Dur";
-                } else {
-                    button_text = "Başla";
-                }
-                if ui.button(button_text).clicked() {
-                    self.on_button_tap();
-                }
             });
         });
     }
@@ -105,12 +122,15 @@ impl eframe::App for MainScreen {
 
 impl MainScreen {
     fn new(window_handle: usize) -> Self {
+        let selected_value = SelectedLoopValue { 
+            selected_key_text: String::from(""), 
+            wait_time_text: String::from("100") 
+        };
         Self {
             window_handle,
             sender: None,
             looping: false,
-            selected_key_title: String::from("F1"),
-            wait_time_text: String::from("1000")
+            loop_values: vec![selected_value; 5]
         }
     }
 }
@@ -125,37 +145,46 @@ impl MainScreen {
     }
 
     fn start_loop(&mut self) {
-        if self.window_handle != 0 {
+        let mut steps = Vec::new();
+        for loop_value in &mut self.loop_values {
             let key_index = INPUT_KEYS
                 .iter()
-                .position(|r| r.title == self.selected_key_title)
+                .position(|r| r.title == loop_value.selected_key_text)
                 .unwrap();
-            let key = INPUT_KEYS[key_index].key;
-            let mut wait_time = self.wait_time_text.parse().unwrap_or(1000);
-            if wait_time < 100 {
-                wait_time = 100;
-            }
-            self.wait_time_text = wait_time.to_string();
-            let (tx, rx) = mpsc::channel();
-            self.sender = Some(tx.clone());
-            let thread_id = unsafe { GetCurrentThreadId() };
-            let keyboard_handle = unsafe { GetKeyboardLayout(thread_id) };
-
-            let window_handle = self.window_handle.clone();
-            let _ = thread::spawn(move || {
-                let looper = Looper {
-                    window_handle,
+                
+            if key_index > 0 {
+                let key = INPUT_KEYS[key_index].key;
+                let mut wait_time = loop_value.wait_time_text.parse().unwrap_or(100);
+                if wait_time < 100 {
+                    wait_time = 100;
+                }
+                loop_value.wait_time_text = wait_time.to_string();
+                let looper_step = LooperStep {
                     key,
-                    wait_time,
-                    receiver: rx,
-                    keyboard_handle
+                    wait_time
                 };
-                looper.start();
-            });
-            self.looping = true
-        } else {
-            panic!("Game window disappeared.")
+                steps.push(looper_step);
+            } else {
+                loop_value.wait_time_text = "0".to_owned();
+            }
         }
+
+        let (tx, rx) = mpsc::channel();
+        self.sender = Some(tx.clone());
+        let thread_id = unsafe { GetCurrentThreadId() };
+        let keyboard_handle = unsafe { GetKeyboardLayout(thread_id) };
+
+        let window_handle = self.window_handle.clone();
+        let _ = thread::spawn(move || {
+            let looper = Looper {
+                window_handle,
+                steps,
+                receiver: rx,
+                keyboard_handle
+            };
+            looper.start();
+        });
+        self.looping = true
     }
 
     fn stop_loop(&mut self) {
@@ -166,29 +195,32 @@ impl MainScreen {
     }
 } 
 
-struct Looper {
-    window_handle: usize,
+struct LooperStep {
     key: u16,
     wait_time: u64,
+}
+
+struct Looper {
+    window_handle: usize,
+    steps: Vec<LooperStep>,
     receiver: Receiver<LooperMessage>,
     keyboard_handle: usize
 }
 
 impl Looper {
     fn start(&self) {
-        loop {
-            if let Ok(message) = self.receiver.try_recv() {
-                match message {
-                    LooperMessage::Stop => break
+        'outer: loop {
+            for step in &self.steps {
+                if let Ok(message) = self.receiver.try_recv() {
+                    match message {
+                        LooperMessage::Stop => break 'outer
+                    }
                 }
+                self.send_key_down(step.key);
+                std::thread::sleep(std::time::Duration::from_millis(step.wait_time));
             }
-            self.send_key();
-            std::thread::sleep(std::time::Duration::from_millis(self.wait_time));
+            std::thread::sleep(std::time::Duration::from_millis(1));
         }
-    }
-
-    fn send_key(&self) {
-        self.send_key_down(self.key);
     }
 
     fn send_key_down(&self, key: u16) {
@@ -208,7 +240,8 @@ struct InputKey {
     title: &'static str,
 }
 
-static INPUT_KEYS: [InputKey; 73] = [
+static INPUT_KEYS: [InputKey; 74] = [
+    InputKey { key: 0x0, title: ""},
     InputKey { key: 0x70, title: "F1" },
     InputKey { key: 0x71, title: "F2" },
     InputKey { key: 0x72, title: "F3" },
