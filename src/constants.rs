@@ -1,0 +1,9 @@
+pub const WINDOW_TITLE_SUFFIX: &str = "Valor Loop - ";
+pub const SELECTED_KEY_NONE_TEXT: &str = "";
+pub const WAIT_TIME_NONE_TEXT: &str = "0";
+pub const DEFAULT_WAIT_TIME: u64 = 100;
+pub const MINIMUM_WAIT_TIME: u64 = 100;
+pub const SELECTED_KEY_TITLE: &str = "Tuş";
+pub const WAIT_TITLE: &str = "Bekle:";
+pub const START_BUTTON_TITLE: &str = "Başla";
+pub const STOP_BUTTON_TITLE: &str = "Dur";
