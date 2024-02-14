@@ -3,12 +3,6 @@ use egui::Vec2;
 use winapi::um::{processthreadsapi::GetCurrentThreadId, winuser::GetKeyboardLayout};
 use crate::{constants::*, input_key::INPUT_KEYS, looper::{Looper, LooperMessage, LooperStep}};
 
-/// Old code to use certain API
-/* extern "system" {
-    fn GetKeyboardLayout(thread_id: u32) -> usize;
-    fn GetCurrentThreadId() -> u32;
-} */
-
 #[derive(Clone)]
 struct SelectedLoopValue {
     selected_key_text: String,
