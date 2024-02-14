@@ -82,7 +82,7 @@ impl MainScreen {
                 } else {
                     START_BUTTON_TITLE
                 };
-                ui.add_space(2.0);
+                ui.add_space(5.0);
                 if ui.button(button_text).clicked() {
                     self.on_button_tap();
                 }
@@ -129,6 +129,7 @@ impl MainScreen {
 
     fn start_loop(&mut self) {
         let steps = self.get_loop_steps();
+        if steps.is_empty() { return }
         let (tx, rx) = mpsc::channel();
         self.sender = Some(tx.clone());
         let thread_id = unsafe { GetCurrentThreadId() };
