@@ -1,12 +1,15 @@
 use std::{sync::mpsc::{self, Sender}, thread};
 use egui::Vec2;
+use mouse_position::mouse_position::Mouse;
 use winapi::um::{processthreadsapi::GetCurrentThreadId, winuser::GetKeyboardLayout};
-use crate::{constants::*, input_key::INPUT_KEYS, looper::{Looper, LooperMessage, LooperStep}};
+use crate::{constants::*, input_key::USER_INPUTS, looper::{Looper, LooperMessage, LooperStep}};
 
 #[derive(Clone)]
 struct SelectedLoopValue {
     selected_key_text: String,
-    wait_time_text: String
+    wait_time_text: String,
+    pos_x_text: String,
+    pos_y_text: String,
 }
 
 pub struct MainScreen {
@@ -20,7 +23,9 @@ impl MainScreen {
     pub fn new(window_handle: usize) -> Self {
         let selected_value = SelectedLoopValue { 
             selected_key_text: SELECTED_KEY_NONE_TEXT.to_string(),
-            wait_time_text: DEFAULT_WAIT_TIME.to_string()
+            wait_time_text: DEFAULT_WAIT_TIME.to_string(),
+            pos_x_text: DEFAULT_POS_X.to_string(),
+            pos_y_text: DEFAULT_POS_Y.to_string()
         };
         Self {
             window_handle,
@@ -35,11 +40,12 @@ impl eframe::App for MainScreen {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.vertical(|ui| {
-                ui.spacing_mut().combo_width = 135.0;
-                ui.spacing_mut().text_edit_width = 100.0;
+                ui.spacing_mut().combo_width = 155.0;
+                ui.spacing_mut().text_edit_width = 50.0;
                 ui.spacing_mut().button_padding = Vec2::new(20.0, 0.0);
                 self.loop_views(ui);
                 self.start_button_view(ui);
+                ctx.request_repaint();
             });
         });
     }
@@ -55,10 +61,20 @@ impl MainScreen {
                     egui::ComboBox::new("tus".to_owned() + &combo_id.to_string(), "")
                     .selected_text(loop_value.selected_key_text.clone())
                     .show_ui(ui, |ui| {
-                        for input_key in &INPUT_KEYS {
-                            ui.selectable_value(&mut loop_value.selected_key_text, input_key.title.to_owned(), input_key.title);
+                        for input_key in &USER_INPUTS {
+                            ui.selectable_value(&mut loop_value.selected_key_text, input_key.get_title().to_owned(), input_key.get_title().to_owned());
                         }
                     });
+                    ui.spacing();
+
+                    ui.label(format!("{}", X_LABEL_TITLE));
+                    ui.text_edit_singleline(&mut loop_value.pos_x_text);
+                    ui.spacing();
+
+                    ui.label(format!("{}", Y_LABEL_TITLE));
+                    ui.text_edit_singleline(&mut loop_value.pos_y_text);
+                    ui.spacing();
+
                     ui.label(format!("{}", WAIT_TITLE));
                     ui.text_edit_singleline(&mut loop_value.wait_time_text);
                     ui.spacing();
@@ -76,10 +92,15 @@ impl MainScreen {
                 } else {
                     START_BUTTON_TITLE
                 };
-                ui.add_space(5.0);
                 if ui.button(button_text).clicked() {
                     self.on_button_tap();
                 }
+
+                let position = Mouse::get_mouse_position();
+                match position {
+                    Mouse::Position { x, y } => ui.label(format!("X: {}, Y: {}", x, y)),
+                    Mouse::Error => ui.label(CURSOR_POSITION_NOT_FOUND)
+               }
             });
         });
     }
@@ -97,21 +118,25 @@ impl MainScreen {
     fn get_loop_steps(&mut self) -> Vec<LooperStep>{
         let mut steps = Vec::new();
         for loop_value in &mut self.loop_values {
-            let key_index = INPUT_KEYS
+            let key_index = USER_INPUTS
                 .iter()
-                .position(|r| r.title == loop_value.selected_key_text)
+                .position(|r| r.get_title() == loop_value.selected_key_text)
                 .unwrap();
                 
             if key_index > 0 {
-                let key = INPUT_KEYS[key_index].key;
+                let user_input = &USER_INPUTS[key_index];
                 let mut wait_time = loop_value.wait_time_text.parse().unwrap_or(100);
+                let pos_x = loop_value.pos_x_text.parse().unwrap_or(0);
+                let pos_y = loop_value.pos_y_text.parse().unwrap_or(0);
                 if wait_time < MINIMUM_WAIT_TIME {
                     wait_time = MINIMUM_WAIT_TIME;
                 }
                 loop_value.wait_time_text = wait_time.to_string();
                 let looper_step = LooperStep {
-                    key,
-                    wait_time
+                    user_input: user_input.clone(),
+                    wait_time,
+                    pos_x,
+                    pos_y
                 };
                 steps.push(looper_step);
             } else {

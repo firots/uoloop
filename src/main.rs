@@ -11,7 +11,7 @@ fn main() -> Result<(), eframe::Error> {
     
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_inner_size([350.0, 142.0])
+            .with_inner_size([485.0, 142.0])
             .with_resizable(false)
             .with_maximize_button(false),
         ..Default::default()
