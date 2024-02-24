@@ -16,7 +16,8 @@ pub struct MainScreen {
     window_handle: usize,
     sender: Option<Sender<LooperMessage>>,
     looping: bool,
-    loop_values: Vec<SelectedLoopValue>
+    loop_values: Vec<SelectedLoopValue>,
+    view_did_load: bool,
 }
 
 impl MainScreen {
@@ -31,7 +32,8 @@ impl MainScreen {
             window_handle,
             sender: None,
             looping: false,
-            loop_values: vec![selected_value; 5]
+            loop_values: vec![selected_value; 5],
+            view_did_load: false
         }
     }
 }
@@ -45,8 +47,12 @@ impl eframe::App for MainScreen {
                 ui.spacing_mut().button_padding = Vec2::new(20.0, 0.0);
                 self.loop_views(ui);
                 self.bottom_controls_view(ui);
-                ctx.request_repaint();
             });
+
+            if !self.view_did_load {
+                self.view_did_load(ctx);
+                self.view_did_load = true;
+            }
         });
     }
 }
@@ -174,5 +180,16 @@ impl MainScreen {
             sender.send(LooperMessage::Stop).unwrap();
             self.looping = false
         }
+    }
+
+    fn view_did_load(&mut self, ctx: &egui::Context) {
+        let cxt_clone = ctx.clone();
+        let _ = thread::spawn(move || {
+            loop {
+                cxt_clone.request_repaint();
+                std::thread::sleep(std::time::Duration::from_millis(100));
+            }
+        });
+        
     }
 }
