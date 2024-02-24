@@ -1,8 +1,8 @@
 pub const WINDOW_TITLE_SUFFIX: &str = "Valor Loop - ";
 pub const SELECTED_KEY_NONE_TEXT: &str = "";
 pub const WAIT_TIME_NONE_TEXT: &str = "";
-pub const DEFAULT_WAIT_TIME: u64 = 100;
-pub const MINIMUM_WAIT_TIME: u64 = 100;
+pub const DEFAULT_WAIT_TIME: u64 = 1000;
+pub const MINIMUM_WAIT_TIME: u64 = 500;
 pub const DEFAULT_POS_X: u64 = 0;
 pub const DEFAULT_POS_Y: u64 = 0;
 pub const SELECTED_KEY_TITLE: &str = "Tuş:";
@@ -12,3 +12,4 @@ pub const STOP_BUTTON_TITLE: &str = "Dur";
 pub const X_LABEL_TITLE: &str = "X:";
 pub const Y_LABEL_TITLE: &str = "Y:";
 pub const CURSOR_POSITION_NOT_FOUND: &str = "Mouse pozisyonu bulunamadi.";
+pub const MOUSE_CLICKS_WARNING_MESSAGE: &str = "Mouse click'ler sadece oyun penceresi acikken calisir.";

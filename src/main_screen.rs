@@ -1,5 +1,5 @@
 use std::{sync::mpsc::{self, Sender}, thread};
-use egui::Vec2;
+use egui::{style::Spacing, Label, Vec2};
 use mouse_position::mouse_position::Mouse;
 use winapi::um::{processthreadsapi::GetCurrentThreadId, winuser::GetKeyboardLayout};
 use crate::{constants::*, input_key::USER_INPUTS, looper::{Looper, LooperMessage, LooperStep}};
@@ -41,10 +41,10 @@ impl eframe::App for MainScreen {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.vertical(|ui| {
                 ui.spacing_mut().combo_width = 155.0;
-                ui.spacing_mut().text_edit_width = 50.0;
+                ui.spacing_mut().text_edit_width = 60.0;
                 ui.spacing_mut().button_padding = Vec2::new(20.0, 0.0);
                 self.loop_views(ui);
-                self.start_button_view(ui);
+                self.bottom_controls_view(ui);
                 ctx.request_repaint();
             });
         });
@@ -57,7 +57,6 @@ impl MainScreen {
         for loop_value in &mut self.loop_values {
             ui.horizontal(|ui| {
                 ui.add_enabled_ui(!self.looping, |ui| {
-                    ui.label(format!("{}", SELECTED_KEY_TITLE));
                     egui::ComboBox::new("tus".to_owned() + &combo_id.to_string(), "")
                     .selected_text(loop_value.selected_key_text.clone())
                     .show_ui(ui, |ui| {
@@ -84,25 +83,29 @@ impl MainScreen {
         }
     }
 
-    fn start_button_view(&mut self, ui: &mut egui::Ui) {
-        ui.with_layout(egui::Layout::right_to_left(egui::Align::Min), |ui| {
-            ui.horizontal(|ui| {
-                let button_text = if self.looping {
-                    STOP_BUTTON_TITLE
-                } else {
-                    START_BUTTON_TITLE
-                };
-                if ui.button(button_text).clicked() {
-                    self.on_button_tap();
+    fn bottom_controls_view(&mut self, ui: &mut egui::Ui) {
+        ui.horizontal(|ui| {
+            self.start_button_view(ui);
+            let position = Mouse::get_mouse_position();
+            match position {
+                Mouse::Position { x, y } => {
+                    ui.label(MOUSE_CLICKS_WARNING_MESSAGE);
+                    ui.label(format!("X: {}, Y: {}", x, y))
                 }
-
-                let position = Mouse::get_mouse_position();
-                match position {
-                    Mouse::Position { x, y } => ui.label(format!("X: {}, Y: {}", x, y)),
-                    Mouse::Error => ui.label(CURSOR_POSITION_NOT_FOUND)
-               }
-            });
+                Mouse::Error => ui.label(CURSOR_POSITION_NOT_FOUND)
+            };
         });
+    }
+
+    fn start_button_view(&mut self, ui: &mut egui::Ui) {
+        let button_text = if self.looping {
+            STOP_BUTTON_TITLE
+        } else {
+            START_BUTTON_TITLE
+        };
+        if ui.button(button_text).clicked() {
+            self.on_button_tap();
+        }
     }
 }
 

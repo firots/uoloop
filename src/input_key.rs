@@ -1,7 +1,7 @@
 #[derive(Clone)]
 pub enum UserInput {
     SingleClick { key_down: u16, key_up: u16, title: &'static str},
-    DoubleClick { key: u16, title: &'static str },
+    DoubleClick { key_down: u16, key_up: u16, title: &'static str },
     KeyPress { key: u16, title: &'static str}
 }
 
@@ -29,10 +29,10 @@ pub static USER_INPUTS: [UserInput; 78] = [
     UserInput::KeyPress { key: 0x79, title: "F10" },
     UserInput::KeyPress { key: 0x7A, title: "F11" },
     UserInput::KeyPress { key: 0x7B, title: "F12" },
-    UserInput::SingleClick { key_down: 0x0201, key_up: 0x0202, title: "Mouse Sol Tek" },
-    UserInput::SingleClick { key_down: 0x0204, key_up: 0x0205, title: "Mouse Sag Tek" },
-    UserInput::DoubleClick { key:  0x0203, title: "Mouse Sol Cift" },
-    UserInput::DoubleClick { key:  0x0206, title: "Mouse Sag Cift" },
+    UserInput::SingleClick { key_down: 0x0002, key_up: 0x0004, title: "Mouse Sol Tek" },
+    UserInput::SingleClick { key_down: 0x0008, key_up: 0x0010, title: "Mouse Sag Tek" },
+    UserInput::DoubleClick { key_down: 0x0002, key_up: 0x0004, title: "Mouse Sol Cift" },
+    UserInput::DoubleClick { key_down: 0x0008, key_up: 0x0010, title: "Mouse Sag Cift" },
     UserInput::KeyPress { key: 0x30, title: "0" },
     UserInput::KeyPress { key: 0x31, title: "1" },
     UserInput::KeyPress { key: 0x32, title: "2" },

@@ -1,6 +1,7 @@
 use std::sync::mpsc::Receiver;
-use winapi::um::winuser::{MapVirtualKeyExW, SendMessageW, MAPVK_VK_TO_VSC, WM_KEYDOWN};
-use crate::input_key::UserInput;
+use mouse_position::mouse_position::Mouse;
+use winapi::um::winuser::{mouse_event, GetForegroundWindow, MapVirtualKeyExW, SendMessageW, SetCursorPos, MAPVK_VK_TO_VSC, WM_KEYDOWN};
+use crate::{constants::CURSOR_POSITION_NOT_FOUND, input_key::UserInput};
 
 pub enum LooperMessage {
     Stop
@@ -9,8 +10,8 @@ pub enum LooperMessage {
 pub struct LooperStep {
     pub(crate) user_input: UserInput,
     pub(crate) wait_time: u64,
-    pub(crate) pos_x: u64,
-    pub(crate) pos_y: u64,
+    pub(crate) pos_x: u32,
+    pub(crate) pos_y: u32,
 }
 
 pub struct Looper {
@@ -36,24 +37,61 @@ impl Looper {
         }
     }
 
+    fn is_game_on_foreground(&self) -> bool {
+        unsafe {
+            let hwnd = GetForegroundWindow();
+            if hwnd.is_null() {
+                false
+            } else {
+                let hwnd = hwnd as usize;
+                hwnd == self.window_handle
+            }
+        }
+    }
+
+    unsafe fn send_mouse_click(&self, x: u32, y: u32, key_down: u16, key_up: u16, double_click: bool) {
+        if self.is_game_on_foreground() {
+            let old_mouse_position = Mouse::get_mouse_position();
+            SetCursorPos(x.try_into().unwrap(), y.try_into().unwrap());
+            std::thread::sleep(std::time::Duration::from_millis(5));
+            mouse_event(key_down.into(), x, y, 0, 0);
+            std::thread::sleep(std::time::Duration::from_millis(5));
+            mouse_event(key_up.into(), x, y, 0, 0);
+            if double_click {
+                std::thread::sleep(std::time::Duration::from_millis(5));
+                mouse_event(key_down.into(), x, y, 0, 0);
+                std::thread::sleep(std::time::Duration::from_millis(5));
+                mouse_event(key_up.into(), x, y, 0, 0);
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+            if let Mouse::Position { x, y } = old_mouse_position {
+                SetCursorPos(x, y);
+            } else {
+                println!("{}", CURSOR_POSITION_NOT_FOUND);
+            }
+        }
+    }
+
+    unsafe fn send_key_press(&self, key: u16) {
+        let scan_code = 1 | ( MapVirtualKeyExW(key.into(), MAPVK_VK_TO_VSC, self.keyboard_handle as _) << 16);
+        SendMessageW(self.window_handle as _, WM_KEYDOWN, key as _, scan_code as _);
+    }
+
     fn send_input(&self, step: &LooperStep) {
         match step.user_input {
             UserInput::SingleClick { key_down, key_up, ..} => {
-                println!("single click x:{}:y{} down:{} up:{}", step.pos_x, step.pos_y, key_down, key_up);
                 unsafe {
-                    SendMessageW(self.window_handle as _, key_down.into(), 0, ((step.pos_y << 16) | step.pos_x & 0xFFFF).try_into().unwrap());
-                    SendMessageW(self.window_handle as _, key_up.into(), 0, ((step.pos_y << 16) | step.pos_x & 0xFFFF).try_into().unwrap());
-                }
+                    self.send_mouse_click(step.pos_x.try_into().unwrap(), step.pos_y.try_into().unwrap(), key_down, key_up, false);
+                } 
             }
-            UserInput::DoubleClick { key, ..} => {
+            UserInput::DoubleClick { key_down, key_up, ..} => {
                 unsafe {
-                    SendMessageW(self.window_handle as _, key.into(), 0, ((step.pos_y << 16) | step.pos_x).try_into().unwrap());
+                    self.send_mouse_click(step.pos_x.try_into().unwrap(), step.pos_y.try_into().unwrap(), key_down, key_up, true);
                 }
             }
             UserInput::KeyPress { key, ..} => {
-                let scan_code = 1 | (unsafe { MapVirtualKeyExW(key.into(), MAPVK_VK_TO_VSC, self.keyboard_handle as _) } << 16);
                 unsafe {
-                    SendMessageW(self.window_handle as _, WM_KEYDOWN, key as _, scan_code as _);
+                    self.send_key_press(key);
                 }
             }
         }
