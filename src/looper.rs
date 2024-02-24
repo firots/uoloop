@@ -1,6 +1,6 @@
 use std::sync::mpsc::Receiver;
 use mouse_position::mouse_position::Mouse;
-use winapi::um::winuser::{mouse_event, GetForegroundWindow, MapVirtualKeyExW, SendMessageW, SetCursorPos, MAPVK_VK_TO_VSC, WM_KEYDOWN};
+use winapi::um::winuser::{mouse_event, GetForegroundWindow, MapVirtualKeyExW, SendMessageW, SetCursorPos, MAPVK_VK_TO_VSC, WM_KEYDOWN, WM_KEYUP};
 use crate::{constants::CURSOR_POSITION_NOT_FOUND, input_key::UserInput};
 
 pub enum LooperMessage {
@@ -75,6 +75,8 @@ impl Looper {
     unsafe fn send_key_press(&self, key: u16) {
         let scan_code = 1 | ( MapVirtualKeyExW(key.into(), MAPVK_VK_TO_VSC, self.keyboard_handle as _) << 16);
         SendMessageW(self.window_handle as _, WM_KEYDOWN, key as _, scan_code as _);
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        SendMessageW(self.window_handle as _, WM_KEYUP, key as _, scan_code as _);
     }
 
     fn send_input(&self, step: &LooperStep) {
