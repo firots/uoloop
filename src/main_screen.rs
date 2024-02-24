@@ -1,7 +1,7 @@
-use std::{sync::mpsc::{self, Sender}, thread};
+use std::{process, sync::mpsc::{self, Sender}, thread};
 use egui::Vec2;
 use mouse_position::mouse_position::Mouse;
-use winapi::um::{processthreadsapi::GetCurrentThreadId, winuser::GetKeyboardLayout};
+use winapi::{shared::windef::HWND, um::{processthreadsapi::GetCurrentThreadId, winuser::{GetKeyboardLayout, IsWindow}}};
 use crate::{constants::*, input_key::USER_INPUTS, looper::{Looper, LooperMessage, LooperStep}};
 
 #[derive(Clone)]
@@ -186,12 +186,17 @@ impl MainScreen {
 
     fn view_did_load(&mut self, ctx: &egui::Context) {
         let cxt_clone = ctx.clone();
+        let hwnd = self.window_handle.clone();
         let _ = thread::spawn(move || {
             loop {
                 cxt_clone.request_repaint();
+                unsafe {
+                    if IsWindow(hwnd as HWND) == 0 {
+                        process::exit(0x0100);
+                    }
+                }
                 std::thread::sleep(std::time::Duration::from_millis(100));
             }
         });
-        
     }
 }
