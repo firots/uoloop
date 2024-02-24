@@ -1,7 +1,10 @@
 use std::env;
 use eframe::egui;
-use uoloop::{constants::WINDOW_TITLE_SUFFIX, main_screen::MainScreen};
+use uoloop::main_screen::MainScreen;
 use winapi::um::winuser::{GetWindowTextLengthW, GetWindowTextW};
+#[macro_use]
+extern crate litcrypt;
+use_litcrypt!("/q^+^'+^&%+%&%+&%++^'+^'&/%/&%/&%");
 
 fn main() -> Result<(), eframe::Error> {
     let args: Vec<String> = env::args().collect();
@@ -18,7 +21,7 @@ fn main() -> Result<(), eframe::Error> {
     };
 
     eframe::run_native(
-        &(WINDOW_TITLE_SUFFIX.to_owned() + player_name),
+        &(lc!("Valor Loop - ").to_owned() + player_name),
         options,
         Box::new(move |_| Box::new(MainScreen::new(window_handle))),
     )

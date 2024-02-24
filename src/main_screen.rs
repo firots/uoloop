@@ -1,5 +1,5 @@
 use std::{sync::mpsc::{self, Sender}, thread};
-use egui::{style::Spacing, Label, Vec2};
+use egui::Vec2;
 use mouse_position::mouse_position::Mouse;
 use winapi::um::{processthreadsapi::GetCurrentThreadId, winuser::GetKeyboardLayout};
 use crate::{constants::*, input_key::USER_INPUTS, looper::{Looper, LooperMessage, LooperStep}};
