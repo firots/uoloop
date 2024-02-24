@@ -141,6 +141,8 @@ impl MainScreen {
                     wait_time = MINIMUM_WAIT_TIME;
                 }
                 loop_value.wait_time_text = wait_time.to_string();
+                loop_value.pos_x_text = pos_x.to_string();
+                loop_value.pos_y_text = pos_y.to_string();
                 let looper_step = LooperStep {
                     user_input: user_input.clone(),
                     wait_time,
