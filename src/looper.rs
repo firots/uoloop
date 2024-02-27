@@ -54,22 +54,40 @@ impl Looper {
             let old_mouse_position = Mouse::get_mouse_position();
             SetCursorPos(x.try_into().unwrap(), y.try_into().unwrap());
             std::thread::sleep(std::time::Duration::from_millis(5));
-            mouse_event(key_down.into(), x, y, 0, 0);
+            self.mouse_event_if_on_macro_position(key_down.into(), x, y);
             std::thread::sleep(std::time::Duration::from_millis(5));
-            mouse_event(key_up.into(), x, y, 0, 0);
+            self.mouse_event_if_on_macro_position(key_up.into(), x, y);
             if double_click {
                 std::thread::sleep(std::time::Duration::from_millis(5));
-                mouse_event(key_down.into(), x, y, 0, 0);
+                self.mouse_event_if_on_macro_position(key_down.into(), x, y);
                 std::thread::sleep(std::time::Duration::from_millis(5));
-                mouse_event(key_up.into(), x, y, 0, 0);
+                self.mouse_event_if_on_macro_position(key_up.into(), x, y);
             }
-            std::thread::sleep(std::time::Duration::from_millis(10));
+            std::thread::sleep(std::time::Duration::from_millis(5));
             if let Mouse::Position { x, y } = old_mouse_position {
                 SetCursorPos(x, y);
             } else {
                 println!("{}", CURSOR_POSITION_NOT_FOUND);
             }
         }
+    }
+
+    unsafe fn mouse_event_if_on_macro_position(&self, key: u16, x: u32, y: u32) {
+        if self.is_cursor_on_macro_position(x, y) {
+            mouse_event(key.into(), x, y, 0, 0);
+        }
+    }
+
+    fn is_cursor_on_macro_position(&self, macro_x: u32, macro_y: u32) -> bool {
+        let position = Mouse::get_mouse_position();
+        let is_on_macro_position: bool;
+        match position {
+            Mouse::Position { x, y } => {
+                is_on_macro_position = x == macro_x.try_into().unwrap() && y == macro_y.try_into().unwrap()
+            }
+            Mouse::Error => is_on_macro_position = false
+        };
+        is_on_macro_position
     }
 
     unsafe fn send_key_press(&self, key: u16) {
