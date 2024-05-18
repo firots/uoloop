@@ -1,7 +1,11 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 use std::env;
 use eframe::egui;
-use uoloop::{constants::WINDOW_TITLE_SUFFIX, main_screen::MainScreen};
+use uoloop::main_screen::MainScreen;
 use winapi::um::winuser::{GetWindowTextLengthW, GetWindowTextW};
+#[macro_use]
+extern crate litcrypt;
+use_litcrypt!("/q^+^'+^&%+%&%+&%++^'+^'&/%/&%/&%");
 
 fn main() -> Result<(), eframe::Error> {
     let args: Vec<String> = env::args().collect();
@@ -11,14 +15,14 @@ fn main() -> Result<(), eframe::Error> {
     
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_inner_size([350.0, 142.0])
+            .with_inner_size([485.0, 142.0])
             .with_resizable(false)
             .with_maximize_button(false),
         ..Default::default()
     };
 
     eframe::run_native(
-        &(WINDOW_TITLE_SUFFIX.to_owned() + player_name),
+        &(lc!("Valor Loop - ").to_owned() + player_name),
         options,
         Box::new(move |_| Box::new(MainScreen::new(window_handle))),
     )
